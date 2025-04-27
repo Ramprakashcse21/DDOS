@@ -10,6 +10,7 @@ from flask import Flask, render_template
 import json
 import html
 from collections import Counter
+from zoneinfo import ZoneInfo 
 
 # Load the trained model and scaler
 model = joblib.load("xgboost_ddos.pkl")
@@ -167,7 +168,10 @@ def dashboard():
             dt = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
         except ValueError:
             dt = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
-        grouped_times.append(dt.strftime("%Y-%m-%d %I %p"))
+
+        dt_utc = dt.replace(tzinfo=ZoneInfo("UTC"))
+        dt_ist = dt_utc.astimezone(ZoneInfo("Asia/Kolkata"))
+        grouped_times.append(dt_ist.strftime("%Y-%m-%d %I %p"))
 
     # Count frequency per hour
     counts = Counter(grouped_times)
