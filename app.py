@@ -179,15 +179,6 @@ def dashboard():
                            values=json.dumps(occurrences),
                            start=start_date,
                            end=end_date)
-import os
-
-# Print the working directory
-print("Current working directory:", os.getcwd())
-
-# Walk through the directory tree and list all files
-for root, dirs, files in os.walk(os.getcwd()):
-    for file in files:
-        print("Found file:", os.path.join(root, file))
 
 if __name__ == "__main__":
     app.run(debug=True)
