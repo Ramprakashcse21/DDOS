@@ -179,6 +179,13 @@ def dashboard():
                            values=json.dumps(occurrences),
                            start=start_date,
                            end=end_date)
+import os
+
+@app.route('/dashboard-path')
+def dashboardPath():
+    template_path = os.path.abspath(os.path.join('templates', 'dashboard.html'))
+    print("Looking for dashboard.html at:", template_path)
+    return render_template("dashboard.html")
 
 
 if __name__ == "__main__":
