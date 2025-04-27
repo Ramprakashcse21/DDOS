@@ -1,1 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            width: 70%;
+            margin: auto;
+        }
+        form {
+            text-align: center;
+            margin: 0;
+        }
 
+        button{
+            margin-left: 10px;
+            padding: 8px 15px;
+            background-color: rgb(187, 21, 237);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Predictions Per Hour</h2>
+
+    <form method="GET" action="/dashboard">
+        <label for="start">Start Date:</label>
+        <input type="date" name="start" id="start" value="{{ start }}" required>
+        <label for="end">End Date:</label>
+        <input type="date" name="end" id="end" value="{{ end }}" required>
+        <button type="submit">Filter</button>
+    </form>
+
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        const labels = {{ labels | safe }};
+        const values = {{ values | safe }};
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Predictions Per Hour',
+                    data: values,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hour'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Predictions'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
