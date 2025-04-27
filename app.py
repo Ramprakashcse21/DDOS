@@ -1,92 +1,3 @@
-# from flask import Flask, request, jsonify
-# import joblib
-# import numpy as np
-
-# app = Flask(__name__)
-
-# # Load the trained model and scaler
-# model = joblib.load("xgboost_ddos.pkl")
-# scaler = joblib.load("scaler.pkl")
-
-# @app.route("/predict", methods=["POST"])
-# def predict():
-#     try:
-#         data = request.json  # Expecting JSON input
-
-#         # Extract and reshape features
-#         features = np.array([data['Flow Duration'], data['Total Bytes'], 
-#                              data['Average Packet Size'], data['Packet Count'], data['Source Port']]).reshape(1, -1)
-
-#         print("Received features:", features)  # Debugging step
-        
-#         # Normalize the input
-#         features = scaler.transform(features)
-
-#         print("Normalized features:", features)  # Debugging step
-        
-#         # Predict
-#         prediction = model.predict(features)[0]
-#         print("Model Prediction:", prediction)  # Debugging step
-
-#         result = "DDoS Attack Detected" if prediction == 1 else "Normal Traffic"
-        
-#         return jsonify({"prediction": result})
-#     except Exception as e:
-#         return jsonify({"error": str(e)})
-
-# if __name__ == "__main__":
-#     app.run(debug=True)
-
-# ---------------------------------------------------------------------------------------------------------------
-# app.py
-
-# from flask import Flask, request, jsonify
-# import joblib
-# import numpy as np
-
-# app = Flask(__name__)
-
-# # Load the trained model and scaler
-# model = joblib.load("xgboost_ddos.pkl")
-# scaler = joblib.load("scaler.pkl")
-
-# @app.route("/predict", methods=["POST"])
-# def predict():
-#     try:
-#         data = request.json  # Expecting JSON input
-
-#         # Extract and reshape input features
-#         features = np.array([
-#             data['Flow Duration'], 
-#             data['Total Bytes'], 
-#             data['Average Packet Size'], 
-#             data['Packet Count'], 
-#             data['Source Port']
-#         ]).reshape(1, -1)
-
-#         print("Received features:", features)
-
-#         # Normalize the input
-#         features = scaler.transform(features)
-
-#         print("Normalized features:", features)
-
-#         # Get probability of DDoS attack
-#         probability = float(model.predict_proba(features)[0][1])  # Convert float32 → float
-#         print("Probability of DDoS:", probability)
-
-#         # Set threshold for classification
-#         threshold = 0.4  # Adjust if needed
-#         result = "DDoS Attack Detected" if probability > threshold else "Normal Traffic"
-
-#         return jsonify({"prediction": result, "probability": probability})  # JSON serializable
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)})
-
-# if __name__ == "__main__":
-#     app.run(debug=True)
-
 import numpy as np
 import joblib
 import xgboost as xgb
@@ -94,7 +5,11 @@ from flask import Flask, request, jsonify
 from sklearn.preprocessing import StandardScaler
 import traceback
 import sqlite3
-from datetime import datetime
+from datetime import datetime, date
+from flask import Flask, render_template
+import json
+import html
+from collections import Counter
 
 # Load the trained model and scaler
 model = joblib.load("xgboost_ddos.pkl")
@@ -228,7 +143,43 @@ def get_attacks():
     
     return jsonify(attacks)
 
+@app.route('/dashboard')
+def dashboard():
+    # Get start and end date from URL, or use today's date
+    start_date = request.args.get('start') or date.today().isoformat()
+    end_date = request.args.get('end') or date.today().isoformat()
+
+    # SQL query to filter by date
+    query = "SELECT timestamp FROM blocked_requests WHERE DATE(timestamp) BETWEEN ? AND ?"
+    params = (start_date, end_date)
+
+    # Fetch data
+    conn = sqlite3.connect('attacks.db')
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Format each timestamp to hourly buckets (12hr AM/PM format)
+    grouped_times = []
+    for row in rows:
+        try:
+            dt = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            dt = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
+        grouped_times.append(dt.strftime("%Y-%m-%d %I %p"))
+
+    # Count frequency per hour
+    counts = Counter(grouped_times)
+    sorted_times = sorted(counts.keys())
+    occurrences = [counts[t] for t in sorted_times]
+
+    return render_template("dashboard.html",
+                           labels=json.dumps(sorted_times),
+                           values=json.dumps(occurrences),
+                           start=start_date,
+                           end=end_date)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
-
