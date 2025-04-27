@@ -181,12 +181,13 @@ def dashboard():
                            end=end_date)
 import os
 
-@app.route('/dashboard-path')
-def dashboardPath():
-    template_path = os.path.abspath(os.path.join('templates', 'dashboard.html'))
-    print("Looking for dashboard.html at:", template_path)
-    return render_template("dashboard.html")
+# Print the working directory
+print("Current working directory:", os.getcwd())
 
+# Walk through the directory tree and list all files
+for root, dirs, files in os.walk(os.getcwd()):
+    for file in files:
+        print("Found file:", os.path.join(root, file))
 
 if __name__ == "__main__":
     app.run(debug=True)
